@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <title>游戏军师 H5 - 游戏分析报告</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7f8fb;
+        --card: #ffffff;
+        --primary: #ff5b8c;
+        --primary-dark: #e94a7c;
+        --text: #1f2a37;
+        --sub: #6b7280;
+        --border: #e5e7eb;
+        --success: #22c55e;
+        --danger: #ef4444;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .page {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 24px 16px 60px;
+      }
+
+      .hero {
+        background: linear-gradient(135deg, #ffe4ef, #ffeef5 60%, #ffffff);
+        border-radius: 20px;
+        padding: 28px 24px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 24px rgba(255, 91, 140, 0.12);
+      }
+
+      .hero h1 {
+        margin: 0 0 12px;
+        font-size: 28px;
+      }
+
+      .hero p {
+        margin: 0 0 16px;
+        color: var(--sub);
+        line-height: 1.6;
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: #fff;
+        border-radius: 999px;
+        font-size: 12px;
+        border: 1px solid var(--border);
+        color: var(--sub);
+      }
+
+      .card {
+        background: var(--card);
+        border-radius: 18px;
+        padding: 20px;
+        border: 1px solid var(--border);
+        box-shadow: 0 10px 26px rgba(31, 41, 55, 0.06);
+        margin-bottom: 20px;
+      }
+
+      .card h2 {
+        margin: 0 0 16px;
+        font-size: 20px;
+      }
+
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .upload-box {
+        border: 1.5px dashed var(--border);
+        border-radius: 14px;
+        padding: 16px;
+        text-align: center;
+        color: var(--sub);
+        background: #fafafa;
+        transition: 0.2s ease;
+      }
+
+      .upload-box:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+
+      .input-row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .input-row label {
+        font-size: 13px;
+        color: var(--sub);
+      }
+
+      .input-row input,
+      .input-row textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        font-size: 14px;
+      }
+
+      .input-row textarea {
+        resize: vertical;
+        min-height: 88px;
+      }
+
+      .tips {
+        font-size: 12px;
+        color: var(--sub);
+      }
+
+      .preview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+        gap: 12px;
+      }
+
+      .preview-item {
+        position: relative;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        background: #fff;
+      }
+
+      .preview-item img {
+        display: block;
+        width: 100%;
+        height: 100px;
+        object-fit: cover;
+      }
+
+      .remove-btn {
+        position: absolute;
+        right: 6px;
+        top: 6px;
+        background: rgba(0, 0, 0, 0.55);
+        color: #fff;
+        border: none;
+        border-radius: 999px;
+        padding: 2px 8px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .primary-btn {
+        flex: 1;
+        border: none;
+        padding: 12px 16px;
+        border-radius: 14px;
+        background: var(--primary);
+        color: #fff;
+        font-size: 15px;
+        cursor: pointer;
+        transition: 0.2s ease;
+        min-width: 180px;
+      }
+
+      .primary-btn:disabled {
+        cursor: not-allowed;
+        background: #f2a7c0;
+      }
+
+      .secondary-btn {
+        border: 1px solid var(--border);
+        background: #fff;
+        padding: 10px 14px;
+        border-radius: 12px;
+        cursor: pointer;
+      }
+
+      .loading {
+        display: none;
+        gap: 12px;
+        align-items: center;
+        padding: 14px 16px;
+        border-radius: 12px;
+        background: #fff5f8;
+        color: var(--primary-dark);
+        border: 1px dashed #ffd2e1;
+      }
+
+      .loading.active {
+        display: flex;
+      }
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--primary);
+        animation: bounce 1s infinite ease-in-out;
+      }
+
+      .dot:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+
+      .dot:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+
+      @keyframes bounce {
+        0%, 80%, 100% {
+          transform: scale(0.9);
+          opacity: 0.5;
+        }
+        40% {
+          transform: scale(1.2);
+          opacity: 1;
+        }
+      }
+
+      .result {
+        display: none;
+      }
+
+      .result.active {
+        display: block;
+      }
+
+      .result-content {
+        padding: 16px;
+        background: #fffafc;
+        border: 1px solid #ffe4ef;
+        border-radius: 14px;
+        line-height: 1.7;
+      }
+
+      .footer-actions {
+        margin-top: 16px;
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .notice {
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: #fef2f2;
+        color: var(--danger);
+        display: none;
+        font-size: 13px;
+      }
+
+      .notice.active {
+        display: block;
+      }
+
+      .status {
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: #f0fdf4;
+        color: #166534;
+        display: none;
+        font-size: 13px;
+      }
+
+      .status.active {
+        display: block;
+      }
+
+      .privacy {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin-top: 12px;
+        font-size: 13px;
+        color: var(--sub);
+      }
+
+      .privacy input {
+        margin-top: 2px;
+      }
+
+      .scroll-anchor {
+        scroll-margin-top: 20px;
+      }
+
+      @media (min-width: 700px) {
+        .input-row {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <section class="hero">
+        <span class="tag">AI 游戏军师 · 单页 H5</span>
+        <h1>上传截图，AI 帮你读懂游戏</h1>
+        <p>基于游戏截图的视觉解析 + 深度推理，输出「游戏信息、界面要点、玩法分析与市场相似游戏」。</p>
+        <div class="privacy">
+          <input id="privacyCheck" type="checkbox" />
+          <label for="privacyCheck">
+            我已获得授权并同意《隐私协议》，上传内容仅用于游戏分析。
+          </label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>1. 上传游戏截图 (5-9 张)</h2>
+        <div class="upload-box">
+          <input id="fileInput" type="file" accept="image/*" multiple />
+          <p>支持 JPG/PNG，单次最多 9 张。</p>
+        </div>
+        <div class="notice" id="fileNotice"></div>
+        <div class="preview-grid" id="previewGrid"></div>
+      </section>
+
+      <section class="card">
+        <h2>2. 开始分析</h2>
+        <div class="actions">
+          <button class="primary-btn" id="analyzeBtn" disabled>生成游戏分析</button>
+          <button class="secondary-btn" id="resetBtn">重新选择</button>
+        </div>
+        <div class="loading" id="loadingBox">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div id="loadingText">正在识别图片细节...</div>
+        </div>
+        <div class="notice" id="actionNotice"></div>
+        <div class="notice" id="errorNotice"></div>
+        <div class="status" id="successNotice"></div>
+      </section>
+
+      <section class="card result scroll-anchor" id="resultSection">
+        <h2>3. 游戏分析报告</h2>
+        <div class="result-content" id="resultContent">等待分析结果...</div>
+        <div class="footer-actions">
+          <button class="secondary-btn" id="saveBtn">保存长图</button>
+          <button class="secondary-btn" id="reAnalyzeBtn">重新分析</button>
+        </div>
+      </section>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+      const MAX_FILES = 9;
+      const MIN_FILES = 5;
+      const loadingTexts = [
+        "正在识别界面元素...",
+        "正在解析玩法信息...",
+        "正在生成市场对比...",
+      ];
+
+      const state = {
+        files: [],
+        prompts: {
+          vision: "",
+          thinking: "",
+        },
+      };
+
+      const privacyCheck = document.getElementById("privacyCheck");
+      const fileInput = document.getElementById("fileInput");
+      const previewGrid = document.getElementById("previewGrid");
+      const analyzeBtn = document.getElementById("analyzeBtn");
+      const resetBtn = document.getElementById("resetBtn");
+      const loadingBox = document.getElementById("loadingBox");
+      const loadingText = document.getElementById("loadingText");
+      const resultSection = document.getElementById("resultSection");
+      const resultContent = document.getElementById("resultContent");
+      const errorNotice = document.getElementById("errorNotice");
+      const successNotice = document.getElementById("successNotice");
+      const fileNotice = document.getElementById("fileNotice");
+      const actionNotice = document.getElementById("actionNotice");
+      const saveBtn = document.getElementById("saveBtn");
+      const reAnalyzeBtn = document.getElementById("reAnalyzeBtn");
+
+      function setNotice(el, message) {
+        if (!message) {
+          el.classList.remove("active");
+          el.textContent = "";
+          return;
+        }
+        el.textContent = message;
+        el.classList.add("active");
+      }
+
+      function updateAnalyzeState() {
+        const hasEnough = state.files.length >= MIN_FILES && state.files.length <= MAX_FILES;
+        analyzeBtn.disabled = !(hasEnough && privacyCheck.checked);
+        if (!privacyCheck.checked) {
+          setNotice(actionNotice, "请先勾选隐私协议");
+          return;
+        }
+        if (state.files.length < MIN_FILES) {
+          setNotice(actionNotice, `请至少上传 ${MIN_FILES} 张截图`);
+          return;
+        }
+        if (state.files.length > MAX_FILES) {
+          setNotice(actionNotice, `最多上传 ${MAX_FILES} 张截图`);
+          return;
+        }
+        setNotice(actionNotice, "");
+      }
+
+      function renderPreview() {
+        previewGrid.innerHTML = "";
+        state.files.forEach((file, idx) => {
+          const item = document.createElement("div");
+          item.className = "preview-item";
+          const img = document.createElement("img");
+          img.src = file.preview;
+          const btn = document.createElement("button");
+          btn.className = "remove-btn";
+          btn.textContent = "删除";
+          btn.addEventListener("click", () => {
+            state.files.splice(idx, 1);
+            renderPreview();
+            updateAnalyzeState();
+          });
+          item.appendChild(img);
+          item.appendChild(btn);
+          previewGrid.appendChild(item);
+        });
+      }
+
+      async function readFileAsDataUrl(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error("读取图片失败"));
+          reader.readAsDataURL(file);
+        });
+      }
+
+      async function handleFiles(files) {
+        const selected = Array.from(files);
+        if (selected.length + state.files.length > MAX_FILES) {
+          setNotice(fileNotice, `最多上传 ${MAX_FILES} 张图片`);
+          return;
+        }
+        setNotice(fileNotice, "");
+        for (const file of selected) {
+          const preview = await readFileAsDataUrl(file);
+          state.files.push({ file, preview });
+        }
+        renderPreview();
+        updateAnalyzeState();
+      }
+
+      function startLoading() {
+        let idx = 0;
+        loadingText.textContent = loadingTexts[idx];
+        loadingBox.classList.add("active");
+        return setInterval(() => {
+          idx = (idx + 1) % loadingTexts.length;
+          loadingText.textContent = loadingTexts[idx];
+        }, 1600);
+      }
+
+      function stopLoading(timer) {
+        clearInterval(timer);
+        loadingBox.classList.remove("active");
+      }
+
+      async function loadPrompts() {
+        try {
+          const res = await fetch("prompts.md");
+          if (!res.ok) throw new Error("无法读取 prompts.md");
+          const text = await res.text();
+          const visionMatch = text.match(/##\s*vision_prompt[\s\S]*?```([\s\S]*?)```/);
+          const thinkingMatch = text.match(/##\s*thinking_prompt[\s\S]*?```([\s\S]*?)```/);
+          state.prompts.vision = visionMatch ? visionMatch[1].trim() : "";
+          state.prompts.thinking = thinkingMatch ? thinkingMatch[1].trim() : "";
+        } catch (err) {
+          state.prompts.vision = "请描述截图内容，提取 OCR 与场景信息。";
+          state.prompts.thinking = "根据截图内容输出游戏分析。";
+        }
+      }
+
+      function extractTextFromResponse(data) {
+        const candidates = [];
+        if (data?.output_text) candidates.push(data.output_text);
+        if (Array.isArray(data?.output)) {
+          data.output.forEach((item) => {
+            if (item?.content) {
+              item.content.forEach((content) => {
+                if (content?.text) candidates.push(content.text);
+              });
+            }
+          });
+        }
+        if (Array.isArray(data?.choices)) {
+          data.choices.forEach((choice) => {
+            const content = choice?.message?.content;
+            if (content) candidates.push(content);
+          });
+        }
+        return candidates.join("\n").trim();
+      }
+
+      async function analyze() {
+        setNotice(errorNotice, "");
+        setNotice(successNotice, "");
+        resultSection.classList.remove("active");
+
+        if (state.files.length < MIN_FILES) {
+          setNotice(errorNotice, `请至少上传 ${MIN_FILES} 张截图`);
+          return;
+        }
+
+        const timer = startLoading();
+        try {
+          await loadPrompts();
+          const res = await fetch("/api/analyze", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              images: state.files.map((file) => file.preview),
+              prompts: {
+                vision: state.prompts.vision,
+                thinking: state.prompts.thinking,
+              },
+            }),
+          });
+
+          if (!res.ok) {
+            const errorPayload = await res.json().catch(() => ({}));
+            throw new Error(errorPayload?.error || `后端请求失败：${res.status}`);
+          }
+
+          const data = await res.json();
+          const resultText = data?.resultText || "未能获取模型输出，请检查模型响应。";
+
+          resultContent.innerHTML = marked.parse(resultText);
+          resultSection.classList.add("active");
+          setNotice(successNotice, "分析完成，报告已生成。");
+          resultSection.scrollIntoView({ behavior: "smooth" });
+        } catch (err) {
+          const message = err?.message || "分析失败，请稍后重试";
+          if (message.includes("Failed to fetch")) {
+            setNotice(
+              errorNotice,
+              "无法连接本地后端，请先启动服务：node server.js，然后用 http://localhost:8787 打开页面。"
+            );
+          } else {
+            setNotice(errorNotice, message);
+          }
+        } finally {
+          stopLoading(timer);
+        }
+      }
+
+      function resetAll() {
+        state.files = [];
+        renderPreview();
+        updateAnalyzeState();
+        setNotice(fileNotice, "");
+        setNotice(actionNotice, "");
+        setNotice(errorNotice, "");
+        setNotice(successNotice, "");
+        resultSection.classList.remove("active");
+      }
+
+      function saveAsImage() {
+        const html = resultContent.outerHTML;
+        const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "游戏军师-游戏分析报告.html";
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      fileInput.addEventListener("change", (event) => handleFiles(event.target.files));
+      privacyCheck.addEventListener("change", updateAnalyzeState);
+      analyzeBtn.addEventListener("click", analyze);
+      resetBtn.addEventListener("click", resetAll);
+      saveBtn.addEventListener("click", saveAsImage);
+      reAnalyzeBtn.addEventListener("click", analyze);
+
+      updateAnalyzeState();
+    </script>
+  </body>
+</html>
+

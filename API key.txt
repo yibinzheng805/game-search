@@ -1,0 +1,29 @@
+curl https://ark.cn-beijing.volces.com/api/v3/responses \
+-H "Authorization: Bearer $ARK_API_KEY" \
+-H 'Content-Type: application/json' \
+-d '{
+    "model": "ep-20260202210321-znw6w",
+    "input": [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "input_image",
+                    "image_url": "https://ark-project.tos-cn-beijing.volces.com/doc_image/ark_demo_img_1.png"
+                },
+                {
+                    "type": "input_text",
+                    "text": "你看见了什么？"
+                }
+            ]
+        }
+    ]
+}'
+
+
+
+export ARK_API_KEY="174dde6f-33a5-4749-bdff-d1dee0e2ebe9"
+
+
+模型接入链接：https://www.volcengine.com/docs/82379/1399008?lang=zh 
+api信息如上所示，模型信息是：Doubao-Seed-1.8
