@@ -292,15 +292,16 @@
 
       .privacy {
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         gap: 10px;
         margin-top: 12px;
         font-size: 13px;
+        line-height: 1.4;
         color: var(--sub);
       }
 
       .privacy input {
-        margin-top: 2px;
+        margin-top: 0;
       }
 
       .scroll-anchor {
@@ -567,7 +568,7 @@
           if (message.includes("Failed to fetch")) {
             setNotice(
               errorNotice,
-              "无法连接本地后端，请先启动服务：node server.js，然后用 http://localhost:8787 打开页面。"
+              "无法连接后端服务，请确认线上部署的 /api/analyze 是否可用。"
             );
           } else {
             setNotice(errorNotice, message);
@@ -611,3 +612,4 @@
   </body>
 </html>
 
+![1770209973564](image/index/1770209973564.png)![1770209977945](image/index/1770209977945.png)![1770210563280](image/index/1770210563280.png)![1770210635363](image/index/1770210635363.png)![1770210644879](image/index/1770210644879.png)

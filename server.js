@@ -48,6 +48,12 @@ function sendJson(res, status, payload) {
   res.end(data);
 }
 
+function setCorsHeaders(res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+}
+
 function logInfo(message, extra) {
   if (LOG_LEVEL === "silent") return;
   const base = `[INFO] ${new Date().toISOString()} ${message}`;
@@ -174,6 +180,7 @@ function parseJsonBody(req) {
 
 async function handleAnalyze(req, res) {
   const requestId = `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  setCorsHeaders(res);
   const apiKey = getApiKey();
   if (!apiKey) {
     sendJson(res, 500, { error: "未找到 ARK_API_KEY，请检查 API key.txt" });
@@ -281,11 +288,18 @@ function serveStatic(req, res) {
 }
 
 const server = http.createServer((req, res) => {
+  if (req.method === "OPTIONS" && req.url.startsWith("/api/analyze")) {
+    setCorsHeaders(res);
+    res.writeHead(204);
+    res.end();
+    return;
+  }
   if (req.method === "POST" && req.url.startsWith("/api/analyze")) {
     handleAnalyze(req, res);
     return;
   }
   if (req.method === "GET" && req.url.startsWith("/api/health")) {
+    setCorsHeaders(res);
     sendJson(res, 200, { ok: true });
     return;
   }
