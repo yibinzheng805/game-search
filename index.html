@@ -412,11 +412,7 @@
 
       function updateAnalyzeState() {
         const hasEnough = state.files.length >= MIN_FILES && state.files.length <= MAX_FILES;
-        analyzeBtn.disabled = !(hasEnough && privacyCheck.checked);
-        if (!privacyCheck.checked) {
-          setNotice(actionNotice, "请先勾选隐私协议");
-          return;
-        }
+        analyzeBtn.disabled = !hasEnough;
         if (state.files.length < MIN_FILES) {
           setNotice(actionNotice, `请至少上传 ${MIN_FILES} 张截图`);
           return;

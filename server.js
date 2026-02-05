@@ -11,6 +11,28 @@ const ENV_THINKING_MODEL = (process.env.ARK_THINKING_MODEL || "").trim();
 const REQUEST_TIMEOUT_MS = Number(process.env.ARK_TIMEOUT_MS || 180000);
 const LOG_LEVEL = (process.env.LOG_LEVEL || "info").trim();
 
+function loadEnvFile() {
+  const envPath = path.join(ROOT, ".env");
+  if (!fs.existsSync(envPath)) return;
+  const content = fs.readFileSync(envPath, "utf8");
+  content.split(/\r?\n/).forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) return;
+    const idx = trimmed.indexOf("=");
+    if (idx === -1) return;
+    const key = trimmed.slice(0, idx).trim();
+    let value = trimmed.slice(idx + 1).trim();
+    if (value.startsWith("\"") && value.endsWith("\"")) {
+      value = value.slice(1, -1);
+    }
+    if (!process.env[key]) {
+      process.env[key] = value;
+    }
+  });
+}
+
+loadEnvFile();
+
 function readFileSafe(filePath) {
   try {
     return fs.readFileSync(filePath, "utf8");
@@ -34,8 +56,9 @@ function getModelFromFile() {
   const apiKeyFile = path.join(ROOT, "API key.txt");
   const content = readFileSafe(apiKeyFile);
   const visionMatch = content.match(/"model"\s*:\s*"([^"]+)"/);
+  const textMatch = content.match(/模型信息是：([^\s]+)/);
   return {
-    visionModel: visionMatch ? visionMatch[1].trim() : "",
+    visionModel: (visionMatch ? visionMatch[1] : textMatch ? textMatch[1] : "").trim(),
   };
 }
 
@@ -209,8 +232,8 @@ async function handleAnalyze(req, res) {
   logInfo(`分析开始 id=${requestId} images=${images.length}`);
   logInfo(`模型配置 id=${requestId} vision=${visionModel} thinking=${thinkingModel}`);
 
-  if (images.length < 5 || images.length > 9) {
-    sendJson(res, 400, { error: "请上传 5-9 张截图" });
+  if (images.length < 2 || images.length > 9) {
+    sendJson(res, 400, { error: "请上传 2-9 张截图" });
     return;
   }
   if (!visionModel || !thinkingModel) {
