@@ -142,8 +142,8 @@ module.exports = async (req, res) => {
   const visionPrompt = String(prompts.vision || DEFAULT_VISION_PROMPT).trim();
   const thinkingPrompt = String(prompts.thinking || DEFAULT_THINKING_PROMPT).trim();
 
-  if (images.length < 5 || images.length > 9) {
-    sendJson(res, 400, { error: "请上传 5-9 张截图" });
+  if (images.length < 2 || images.length > 9) {
+    sendJson(res, 400, { error: "请上传 2-9 张截图" });
     return;
   }
 
