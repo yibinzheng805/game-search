@@ -89,21 +89,6 @@ function postArk({ apiKey, model, content }) {
   });
 }
 
-async function mapWithConcurrency(items, limit, handler) {
-  const results = new Array(items.length);
-  let cursor = 0;
-  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (true) {
-      const current = cursor;
-      cursor += 1;
-      if (current >= items.length) break;
-      results[current] = await handler(items[current], current);
-    }
-  });
-  await Promise.all(workers);
-  return results;
-}
-
 async function parseBody(req) {
   if (req.body && typeof req.body === "object") return req.body;
   return new Promise((resolve, reject) => {
@@ -163,25 +148,24 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const visionResults = await mapWithConcurrency(images, 2, async (image, index) => {
-      const response = await postArk({
-        apiKey,
-        model: visionModel,
-        content: [
-          { type: "input_image", image_url: image },
-          {
-            type: "input_text",
-            text: `${visionPrompt || "请描述截图内容。"}\n（第 ${index + 1} 张截图）`,
-          },
-        ],
-      });
-      const text = extractTextFromResponse(response);
-      return `【截图 ${index + 1}】\n${text || "无识别结果"}`;
+    const visionContent = images.map((image) => ({
+      type: "input_image",
+      image_url: image,
+    }));
+    visionContent.push({
+      type: "input_text",
+      text: `${visionPrompt || "请描述截图内容。"}\n请逐张输出，按顺序标注为【截图1】、【截图2】...`,
     });
 
-    const combinedInput = `${thinkingPrompt || "请给出游戏分析。"}\n\n以下是游戏截图的视觉解析结果：\n${visionResults.join(
-      "\n\n"
-    )}`;
+    const visionResponse = await postArk({
+      apiKey,
+      model: visionModel,
+      content: visionContent,
+    });
+    const visionText =
+      extractTextFromResponse(visionResponse) || "未能获取视觉解析结果。";
+
+    const combinedInput = `${thinkingPrompt || "请给出游戏分析。"}\n\n以下是游戏截图的视觉解析结果：\n${visionText}`;
 
     const thinkingResponse = await postArk({
       apiKey,
