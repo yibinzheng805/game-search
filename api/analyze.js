@@ -2,6 +2,12 @@ const https = require("https");
 
 const API_ENDPOINT = "https://ark.cn-beijing.volces.com/api/v3/responses";
 const REQUEST_TIMEOUT_MS = Number(process.env.ARK_TIMEOUT_MS || 180000);
+const DEFAULT_VISION_PROMPT =
+  process.env.ARK_VISION_PROMPT ||
+  "请详细描述这张游戏截图的内容。提取其中的文字（OCR）、识别界面元素（按钮、菜单、数值、角色、任务、地图、战斗/经营等）、判断游戏类型与核心玩法线索、推测平台（手游/PC/主机）、画面风格与视角。如果出现关卡/活动/付费信息，请明确指出。";
+const DEFAULT_THINKING_PROMPT =
+  process.env.ARK_THINKING_PROMPT ||
+  "你是资深游戏分析师和产品研究员，擅长通过截图判断游戏类型、玩法机制、目标用户与市场定位，并能给出结构化结论。\n\n你的任务是根据用户提供的游戏截图信息（由视觉模型提取），输出该游戏的多维度分析结论。\n\n分析维度：\n1. 基本信息：可能的游戏类型、题材/世界观、平台（手游/PC/主机）、玩法核心循环。\n2. 界面信号：UI 结构、关键按钮/数值、任务/关卡/货币/活动提示带来的设计意图。\n3. 体验判断：节奏、难度、PVE/PVP、社交/公会、养成/收集等特征。\n4. 商业化线索：内购、礼包、体力/抽卡/订阅等可能出现的付费点。\n5. 市场对标：推测原型游戏，并给出 3-5 款市场相似游戏与相似点。\n\n输出要求：\n1. 结构清晰：用小标题或列表呈现。\n2. 结论具体：尽量引用截图中的可见信息。\n3. 语气风格：专业、简洁、可落地。";
 
 function sendJson(res, status, payload) {
   const data = JSON.stringify(payload);
@@ -83,6 +89,21 @@ function postArk({ apiKey, model, content }) {
   });
 }
 
+async function mapWithConcurrency(items, limit, handler) {
+  const results = new Array(items.length);
+  let cursor = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (true) {
+      const current = cursor;
+      cursor += 1;
+      if (current >= items.length) break;
+      results[current] = await handler(items[current], current);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
 async function parseBody(req) {
   if (req.body && typeof req.body === "object") return req.body;
   return new Promise((resolve, reject) => {
@@ -133,8 +154,8 @@ module.exports = async (req, res) => {
 
   const images = Array.isArray(body?.images) ? body.images : [];
   const prompts = body?.prompts || {};
-  const visionPrompt = String(prompts.vision || "").trim();
-  const thinkingPrompt = String(prompts.thinking || "").trim();
+  const visionPrompt = String(prompts.vision || DEFAULT_VISION_PROMPT).trim();
+  const thinkingPrompt = String(prompts.thinking || DEFAULT_THINKING_PROMPT).trim();
 
   if (images.length < 5 || images.length > 9) {
     sendJson(res, 400, { error: "请上传 5-9 张截图" });
@@ -142,22 +163,21 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const visionResults = [];
-    for (let i = 0; i < images.length; i += 1) {
+    const visionResults = await mapWithConcurrency(images, 2, async (image, index) => {
       const response = await postArk({
         apiKey,
         model: visionModel,
         content: [
-          { type: "input_image", image_url: images[i] },
+          { type: "input_image", image_url: image },
           {
             type: "input_text",
-            text: `${visionPrompt || "请描述截图内容。"}\n（第 ${i + 1} 张截图）`,
+            text: `${visionPrompt || "请描述截图内容。"}\n（第 ${index + 1} 张截图）`,
           },
         ],
       });
       const text = extractTextFromResponse(response);
-      visionResults.push(`【截图 ${i + 1}】\n${text || "无识别结果"}`);
-    }
+      return `【截图 ${index + 1}】\n${text || "无识别结果"}`;
+    });
 
     const combinedInput = `${thinkingPrompt || "请给出游戏分析。"}\n\n以下是游戏截图的视觉解析结果：\n${visionResults.join(
       "\n\n"

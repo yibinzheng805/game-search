@@ -449,13 +449,41 @@
         });
       }
 
-      async function readFileAsDataUrl(file) {
+      const MAX_IMAGE_WIDTH = 1080;
+      const JPEG_QUALITY = 0.82;
+
+      async function readFileRaw(file) {
         return new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result);
           reader.onerror = () => reject(new Error("读取图片失败"));
           reader.readAsDataURL(file);
         });
+      }
+
+      async function loadImage(dataUrl) {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => reject(new Error("加载图片失败"));
+          img.src = dataUrl;
+        });
+      }
+
+      async function readFileAsDataUrl(file) {
+        try {
+          const rawDataUrl = await readFileRaw(file);
+          const img = await loadImage(rawDataUrl);
+          const scale = Math.min(1, MAX_IMAGE_WIDTH / img.width);
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          return canvas.toDataURL("image/jpeg", JPEG_QUALITY);
+        } catch (err) {
+          return readFileRaw(file);
+        }
       }
 
       async function handleFiles(files) {
@@ -489,16 +517,8 @@
       }
 
       async function loadPrompts() {
-        const defaults = {
-          vision:
-            "请详细描述这张游戏截图的内容。提取其中的文字（OCR）、识别界面元素（按钮、菜单、数值、角色、任务、地图、战斗/经营等）、判断游戏类型与核心玩法线索、推测平台（手游/PC/主机）、画面风格与视角。如果出现关卡/活动/付费信息，请明确指出。",
-          thinking:
-            "你是资深游戏分析师和产品研究员，擅长通过截图判断游戏类型、玩法机制、目标用户与市场定位，并能给出结构化结论。\n\n你的任务是根据用户提供的游戏截图信息（由视觉模型提取），输出该游戏的多维度分析结论。\n\n分析维度：\n1. 基本信息：可能的游戏类型、题材/世界观、平台（手游/PC/主机）、玩法核心循环。\n2. 界面信号：UI 结构、关键按钮/数值、任务/关卡/货币/活动提示带来的设计意图。\n3. 体验判断：节奏、难度、PVE/PVP、社交/公会、养成/收集等特征。\n4. 商业化线索：内购、礼包、体力/抽卡/订阅等可能出现的付费点。\n5. 市场对标：推测原型游戏，并给出 3-5 款市场相似游戏与相似点。\n\n输出要求：\n1. 结构清晰：用小标题或列表呈现。\n2. 结论具体：尽量引用截图中的可见信息。\n3. 语气风格：专业、简洁、可落地。",
-        };
-
-        const injected = window.__PROMPTS__ || {};
-        state.prompts.vision = (injected.vision || defaults.vision).trim();
-        state.prompts.thinking = (injected.thinking || defaults.thinking).trim();
+        state.prompts.vision = "";
+        state.prompts.thinking = "";
       }
 
       function extractTextFromResponse(data) {
